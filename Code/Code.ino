@@ -13,7 +13,7 @@ int debug = 3;
 int PIR = 5;
 
 int button1 = 2;
-int buttonState = 0;
+int buttonState = LOW;
 
 int light = 0;
 
@@ -63,12 +63,12 @@ void loop()
     digitalWrite(debug, LOW);
   }
   
-//  if(buttonState == HIGH){
-//    if(currentState == 3){
-//      digitalWrite(debug, HIGH);
-//      currentState++;
-//    }
-//  }
+  if(buttonState == HIGH){
+    if(currentState == 3){
+      digitalWrite(debug, HIGH);
+      currentState++;
+      buttonState = LOW;
+    }
 
   //Using millis() instead of delay(), so program doesn't pause completely.
   currentTime = millis();
@@ -111,7 +111,7 @@ void changeLights(){
   else if(currentState == 5){
     //Red, Red
     digitalWrite(yellow1, LOW);
-    digitalWrite(red2, HIGH);
+    digitalWrite(red1, HIGH);
     asyncDelay(750);
   }
 }
