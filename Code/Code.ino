@@ -1,0 +1,127 @@
+//Libraries Used
+#include<Servo.h>
+
+
+//Variable Declaration
+int red1 = 10;
+int yellow1 = 9;
+int green1 = 8;
+int red2 = 13;
+int yellow2 = 12;
+int green2 = 11;
+int debug = 3;
+int PIR = 5;
+
+int button1 = 2;
+int buttonState = 0;
+
+int light = 0;
+
+unsigned long previousTime = 0;
+unsigned long currentTime = 0;
+int currentState = 0;
+
+int currentPIR = 0;
+int pirState = LOW;
+
+Servo servo;
+
+void setup()
+{
+  pinMode(red1, OUTPUT);
+  pinMode(yellow1, OUTPUT);
+  pinMode(green1, OUTPUT);
+  pinMode(red2, OUTPUT);
+  pinMode(yellow2, OUTPUT);
+  pinMode(green2, OUTPUT);
+  pinMode(debug, OUTPUT);
+  
+  pinMode(PIR, INPUT);
+  
+  pinMode(button1, INPUT);
+
+  servo.attach(4);
+  servo.write(90);
+}
+
+void loop()
+{
+  currentPIR = digitalRead(PIR);
+  if(currentPIR == 1){
+    servo.write(180);
+  }else{
+    servo.write(90);
+  }
+  
+  
+  buttonState = digitalRead(button1);
+  light = analogRead(A0);
+  
+  if(light < 5){
+    digitalWrite(debug, HIGH); 
+  }else{
+    digitalWrite(debug, LOW);
+  }
+  
+//  if(buttonState == HIGH){
+//    if(currentState == 3){
+//      digitalWrite(debug, HIGH);
+//      currentState++;
+//    }
+//  }
+
+  //Using millis() instead of delay(), so program doesn't pause completely.
+  currentTime = millis();
+  changeLights();
+  delayMicroseconds(1000);
+}
+
+void changeLights(){
+  if(currentState == 0){
+    //Red, Green
+    digitalWrite(red2, LOW);
+    digitalWrite(red1, HIGH);
+    digitalWrite(green2, HIGH);
+    asyncDelay(4000);
+  }
+  else if(currentState == 1){
+    //Red, Yellow
+    digitalWrite(green2, LOW);
+    digitalWrite(yellow2, HIGH);
+    asyncDelay(2000);
+  }
+  else if(currentState == 2){
+    //Red, Red
+    digitalWrite(yellow2, LOW);
+    digitalWrite(red2, HIGH);
+    asyncDelay(750);
+  }
+  else if(currentState == 3){
+    //Green, Red
+    digitalWrite(red1, LOW);
+    digitalWrite(green1, HIGH);
+    asyncDelay(4000);
+  }
+  else if(currentState == 4){
+    //Yellow, Red
+    digitalWrite(green1, LOW);
+    digitalWrite(yellow1, HIGH);
+    asyncDelay(2000);
+  }
+  else if(currentState == 5){
+    //Red, Red
+    digitalWrite(yellow1, LOW);
+    digitalWrite(red2, HIGH);
+    asyncDelay(750);
+  }
+}
+
+void asyncDelay(int delayTime){
+  if(currentTime - previousTime >= delayTime){
+    currentState++; 
+    previousTime = currentTime;
+    if(currentState == 6){
+      currentState = 0;
+    }
+  }
+}
