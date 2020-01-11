@@ -10,24 +10,28 @@ int red2 = 13;
 int yellow2 = 12;
 int green2 = 11;
 int debug = 3;
-int PIR = 5;
 
 int button1 = 2;
 int buttonState = LOW;
 
 int light = 0;
 
+int pin = A5;
+
 unsigned long previousTime = 0;
 unsigned long currentTime = 0;
 int currentState = 0;
 
-int currentPIR = 0;
-int pirState = LOW;
+int IR = A1;
+int sensorValue = 0;
+int outputValue = 0;
 
 Servo servo;
 
 void setup()
 {
+  Serial.begin(9600);
+  
   pinMode(red1, OUTPUT);
   pinMode(yellow1, OUTPUT);
   pinMode(green1, OUTPUT);
@@ -36,24 +40,29 @@ void setup()
   pinMode(green2, OUTPUT);
   pinMode(debug, OUTPUT);
   
-  pinMode(PIR, INPUT);
+  pinMode(IR, INPUT);
   
   pinMode(button1, INPUT);
 
+  Serial.begin(9600);
   servo.attach(4);
   servo.write(90);
 }
 
 void loop()
 {
-  currentPIR = digitalRead(PIR);
-  if(currentPIR == 1){
+
+  sensorValue = analogRead(pin);
+  Serial.print("\nSensor: ");
+  Serial.print(sensorValue);
+  if(sensorValue < 1010){
+    Serial.print("\nOBJECT DETECTED: ");
+    Serial.print(sensorValue);
     servo.write(180);
   }else{
     servo.write(90);
   }
-  
-  
+
   buttonState = digitalRead(button1);
   light = analogRead(A0);
   
@@ -69,6 +78,7 @@ void loop()
       currentState++;
       buttonState = LOW;
     }
+  }
 
   //Using millis() instead of delay(), so program doesn't pause completely.
   currentTime = millis();
