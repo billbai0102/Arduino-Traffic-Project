@@ -20,6 +20,8 @@ int pin = A5;
 
 unsigned long previousTime = 0;
 unsigned long currentTime = 0;
+unsigned long servoPreviousTime = 0;
+
 int currentState = 0;
 
 int IR = A1;
@@ -55,12 +57,15 @@ void loop()
   sensorValue = analogRead(pin);
   Serial.print("\nSensor: ");
   Serial.print(sensorValue);
-  if(sensorValue < 1010){
+  if(sensorValue < 1000){
+    servoPreviousTime = currentTime;
     Serial.print("\nOBJECT DETECTED: ");
     Serial.print(sensorValue);
     servo.write(180);
   }else{
-    servo.write(90);
+    if(currentTime - servoPreviousTime >= 6000){
+      servo.write(90);
+    }
   }
 
   buttonState = digitalRead(button1);
