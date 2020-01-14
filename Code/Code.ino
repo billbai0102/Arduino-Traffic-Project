@@ -9,6 +9,8 @@ int green1 = 8;
 int red2 = 13;
 int yellow2 = 12;
 int green2 = 11;
+int pedGreen = 6;
+int pedRed = 7;
 int debug = 3;
 
 int button1 = 2;
@@ -40,6 +42,8 @@ void setup()
   pinMode(red2, OUTPUT);
   pinMode(yellow2, OUTPUT);
   pinMode(green2, OUTPUT);
+  pinMode(pedGreen, OUTPUT);
+  pinMode(pedRed, OUTPUT);
   pinMode(debug, OUTPUT);
   
   pinMode(IR, INPUT);
@@ -68,19 +72,21 @@ void loop()
     }
   }
 
-  buttonState = digitalRead(button1);
+  buttonState = digitalRead(1);
   light = analogRead(A0);
+  Serial.println(light);
+  Serial.println(buttonState);
   
   if(light < 5){
-    digitalWrite(debug, HIGH); 
+    digitalWrite(3, HIGH); 
   }else{
-    digitalWrite(debug, LOW);
+    digitalWrite(3, LOW);
   }
   
   if(buttonState == HIGH){
     if(currentState == 3){
-      digitalWrite(debug, HIGH);
       currentState++;
+      previousTime = currentTime;
       buttonState = LOW;
     }
   }
@@ -95,8 +101,10 @@ void changeLights(){
   if(currentState == 0){
     //Red, Green
     digitalWrite(red2, LOW);
+    digitalWrite(pedRed, LOW);
     digitalWrite(red1, HIGH);
     digitalWrite(green2, HIGH);
+    digitalWrite(pedGreen, HIGH);
     asyncDelay(4000);
   }
   else if(currentState == 1){
@@ -108,7 +116,9 @@ void changeLights(){
   else if(currentState == 2){
     //Red, Red
     digitalWrite(yellow2, LOW);
+    digitalWrite(pedGreen, LOW);
     digitalWrite(red2, HIGH);
+    digitalWrite(pedRed, HIGH);
     asyncDelay(750);
   }
   else if(currentState == 3){
@@ -120,6 +130,7 @@ void changeLights(){
   else if(currentState == 4){
     //Yellow, Red
     digitalWrite(green1, LOW);
+    digitalWrite(red1, LOW);
     digitalWrite(yellow1, HIGH);
     asyncDelay(2000);
   }
