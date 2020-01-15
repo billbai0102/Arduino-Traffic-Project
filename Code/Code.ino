@@ -1,153 +1,193 @@
+/* Bill, Sheng, Steven
+ * Mr. Wong
+ * 2020-01-15
+ * This program controls an Arduino to simulate a real-life T-Intesection.
+ */
+
 //Libraries Used
 #include<Servo.h>
 
-
 //Variable Declaration
-int red1 = 10;
-int yellow1 = 9;
-int green1 = 8;
-int red2 = 13;
-int yellow2 = 12;
-int green2 = 11;
-int pedGreen = 6;
-int pedRed = 7;
-int debug = 3;
-
-int button1 = 2;
+// Variable declarations for the two perpendicular traffic lights. (Adjacent lights are connected in parallel, so no extra variable is needed)
+int redTrafficLight1 = 10;
+int yellowTrafficLight1 = 9;
+int greenTrafficLight1 = 8;
+int redTrafficLight2 = 13;
+int yellowTrafficLight2 = 12;
+int greenTrafficLight2 = 11;
+// Variable declarations for the pedestrian lights and button.
+int greenPedestrianLight = 6;
+int redPedstrianLight = 7;
+int pedestrianButton = 2;
+// Variable declaration for the button state
 int buttonState = LOW;
-
+// Variable declaration for light detected by photoresistor.
 int light = 0;
-
-int pin = A5;
-
+// Variable declaration for previous and current system time - to control delays.
 unsigned long previousTime = 0;
 unsigned long currentTime = 0;
-unsigned long servoPreviousTime = 0;
-
-int currentState = 0;
-
-int IR = A1;
-int sensorValue = 0;
-int outputValue = 0;
-
+// Variable delcaration for state of traffic lights
+int currentTrafficState = 0;
+// Variable declaration for servo to control parking gates.
 Servo servo;
+// Variable declaration for traffic timings.
+int state0Time = 4000;
+int state1Time = 2000;
+int state2Time = 750;
+int state3Time = 4000;
+int state4Time = 2000;
+int state5Time = 750;
 
+//Setup - Called at program start to initialize and setup arduino.
 void setup()
 {
-  Serial.begin(9600);
-  
-  pinMode(red1, OUTPUT);
-  pinMode(yellow1, OUTPUT);
-  pinMode(green1, OUTPUT);
-  pinMode(red2, OUTPUT);
-  pinMode(yellow2, OUTPUT);
-  pinMode(green2, OUTPUT);
-  pinMode(pedGreen, OUTPUT);
-  pinMode(pedRed, OUTPUT);
-  pinMode(debug, OUTPUT);
-  
-  pinMode(IR, INPUT);
-  
-  pinMode(button1, INPUT);
+  // Setup for pinmodes of traffic/pedestrian lights. 
+  pinMode(redTrafficLight1, OUTPUT);
+  pinMode(yellowTrafficLight1, OUTPUT);
+  pinMode(greenTrafficLight1, OUTPUT);
+  pinMode(redTrafficLight2, OUTPUT);
+  pinMode(yellowTrafficLight2, OUTPUT);
+  pinMode(greenTrafficLight2, OUTPUT);
+  pinMode(greenPedestrianLight, OUTPUT);
+  pinMode(redPedstrianLight, OUTPUT);
+  pinMode(pedestrianButton, INPUT);
 
-  Serial.begin(9600);
+  // Attach servo to pin 4
   servo.attach(4);
+  // Initialize servo's initial position to closed.
   servo.write(90);
 }
 
+//Loop - Main program where all methods are run in an infinite loop.
 void loop()
 {
-
-  sensorValue = analogRead(pin);
-  Serial.print("\nSensor: ");
-  Serial.print(sensorValue);
-  if(sensorValue < 1000){
-    servoPreviousTime = currentTime;
-    Serial.print("\nOBJECT DETECTED: ");
-    Serial.print(sensorValue);
-    servo.write(180);
-  }else{
-    if(currentTime - servoPreviousTime >= 6000){
-      servo.write(90);
-    }
-  }
-
+  // Read button state (On or Off)
   buttonState = digitalRead(1);
+  // Read photoresistor state (How much light detected)
   light = analogRead(A0);
-  Serial.println(light);
-  Serial.println(buttonState);
+  // Stores current system time. 
+  currentTime = millis();
+  // Checks if button is pressed
+  if(buttonState == HIGH){
+    buttonPressed(); // Calls buttonPressed() method
+  }
+  controlStreetLights(); // Controls street lights
+  controlServo(); // Controls servo
+  changeLights(); // Changes traffic lights
+}
+
+/**
+ * This method changes the traffic lights, using system time as a delay. 
+ */
+void changeLights(){
+  if(currentTrafficState == 0){
+    //Red, Green
+    digitalWrite(redTrafficLight2, LOW);
+    digitalWrite(redPedstrianLight, LOW);
+    digitalWrite(redTrafficLight1, HIGH);
+    digitalWrite(greenTrafficLight2, HIGH);
+    digitalWrite(greenPedestrianLight, HIGH);
+    asyncDelay(state0Time); // Delay 4s
+  }
+  else if(currentTrafficState == 1){
+    //Red, Yellow
+    digitalWrite(greenTrafficLight2, LOW);
+    digitalWrite(yellowTrafficLight2, HIGH);
+    asyncDelay(state1Time); // Delay 2s
+  }
+  else if(currentTrafficState == 2){
+    //Red, Red
+    digitalWrite(yellowTrafficLight2, LOW);
+    digitalWrite(greenPedestrianLight, LOW);
+    digitalWrite(redTrafficLight2, HIGH);
+    digitalWrite(redPedstrianLight, HIGH);
+    asyncDelay(state2Time); // Delay .75s
+  }
+  else if(currentTrafficState == 3){
+    //Green, Red
+    digitalWrite(redTrafficLight1, LOW);
+    digitalWrite(greenTrafficLight1, HIGH);
+    asyncDelay(state3Time); // Delay 4s
+  }
+  else if(currentTrafficState == 4){
+    //Yellow, Red
+    digitalWrite(greenTrafficLight1, LOW);
+    digitalWrite(redTrafficLight1, LOW);
+    digitalWrite(yellowTrafficLight1, HIGH);
+    asyncDelay(state4Time); // Delay 2s
+  }
+  else if(currentTrafficState == 5){
+    // Reset traffic light times.
+    state3Time = 4000;
+    state4Time = 2000;
+    state5Time = 750;
+    //Red, Red
+    digitalWrite(yellowTrafficLight1, LOW);
+    digitalWrite(redTrafficLight1, HIGH);
+    asyncDelay(state5Time); // delay .75s
+  }
+}
+
+/**
+ * This method is called when a button is pressed. It controls which lights' timings
+ *  are changed based on current traffic state.
+ */
+void buttonPressed(){
+  // As specified in the assignment sheet, when the button is pressed, the timing of the T-intersection yellow and red LED will be 
+  //  cut in half. This will allow the pedestrian wait less to cross.
   
-  if(light < 5){
+  // If pressed while T-intersection light is green, next cycle is halved.
+  if(currentTrafficState == 3 && state3Time != 2000){
+    state4Time = 1000;
+  }
+  // If pressed while T-intersection light is yellow, time is halved.
+  if(currentTrafficState == 4 && state4Time != 1000){
+    previousTime -= (currentTime - previousTime)/2;
+  }else{
+    //If pressed while pedestrian crossing light is green, T-intersection lights will be halved when they occur after.
+    //if(currentTrafficState == 0 || currentTrafficState == 1 || currentTrafficState == 2){
+      state3Time = 2000;
+      state4Time = 1000;
+    //}
+  }
+  buttonState = LOW;
+}
+
+/**
+ * This method controls the street lights based on light detected by the photoresistor.
+ */
+void controlStreetLights(){
+  if(light < 10){
     digitalWrite(3, HIGH); 
   }else{
     digitalWrite(3, LOW);
   }
-  
-  if(buttonState == HIGH){
-    if(currentState == 3){
-      currentState++;
-      previousTime = currentTime;
-      buttonState = LOW;
-    }
-  }
-
-  //Using millis() instead of delay(), so program doesn't pause completely.
-  currentTime = millis();
-  changeLights();
-  delayMicroseconds(1000);
 }
 
-void changeLights(){
-  if(currentState == 0){
-    //Red, Green
-    digitalWrite(red2, LOW);
-    digitalWrite(pedRed, LOW);
-    digitalWrite(red1, HIGH);
-    digitalWrite(green2, HIGH);
-    digitalWrite(pedGreen, HIGH);
-    asyncDelay(4000);
-  }
-  else if(currentState == 1){
-    //Red, Yellow
-    digitalWrite(green2, LOW);
-    digitalWrite(yellow2, HIGH);
-    asyncDelay(2000);
-  }
-  else if(currentState == 2){
-    //Red, Red
-    digitalWrite(yellow2, LOW);
-    digitalWrite(pedGreen, LOW);
-    digitalWrite(red2, HIGH);
-    digitalWrite(pedRed, HIGH);
-    asyncDelay(750);
-  }
-  else if(currentState == 3){
-    //Green, Red
-    digitalWrite(red1, LOW);
-    digitalWrite(green1, HIGH);
-    asyncDelay(4000);
-  }
-  else if(currentState == 4){
-    //Yellow, Red
-    digitalWrite(green1, LOW);
-    digitalWrite(red1, LOW);
-    digitalWrite(yellow1, HIGH);
-    asyncDelay(2000);
-  }
-  else if(currentState == 5){
-    //Red, Red
-    digitalWrite(yellow1, LOW);
-    digitalWrite(red1, HIGH);
-    asyncDelay(750);
+/**
+ * This method controls the parking gate's servo. It changes in
+ *  accordance to the traffic lights as specified in the assignment sheet.
+ */
+void controlServo(){
+  if(currentTrafficState == 0){
+    servo.write(20);
+  }else{
+    servo.write(90);
   }
 }
 
+/**
+ * This method serves as an asynchronous alternative to the delay() method. It
+ *  relies on system time to calculate delays.
+ *  
+ *  @param delayTime - The time to delay for.
+ */
 void asyncDelay(int delayTime){
   if(currentTime - previousTime >= delayTime){
-    currentState++; 
+    currentTrafficState++; 
     previousTime = currentTime;
-    if(currentState == 6){
-      currentState = 0;
+    if(currentTrafficState == 6){
+      currentTrafficState = 0;
     }
   }
 }
